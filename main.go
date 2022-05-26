@@ -6,6 +6,7 @@ import (
 
 	"github.com/andresuchitra/simpleotp/handler"
 	"github.com/andresuchitra/simpleotp/repository"
+	"github.com/andresuchitra/simpleotp/service"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/sqlite"
@@ -18,11 +19,12 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	r := setupRouter()
 	DB := setupDB()
 
 	repo := repository.NewRepository(DB)
-	r := setupRouter()
-	handler.NewHandler(r, repo)
+	service := service.NewOTPService(repo)
+	handler.NewHandler(r, service)
 
 	log.Fatal(r.Run(":3333"))
 }

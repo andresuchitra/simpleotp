@@ -1,45 +1,78 @@
 package service
 
 import (
-	"crypto/rand"
-	"fmt"
-	"os"
+	"context"
+	"errors"
+	"time"
+
+	"github.com/andresuchitra/simpleotp/models"
+	"github.com/andresuchitra/simpleotp/repository"
+	"github.com/google/uuid"
 )
 
-const (
-	digits             = "1234567890"
-	DEFAULT_OTP_LENGTH = 6
-)
-
-type OTPManager struct {
-	Length uint
-	Secret string
+type service struct {
+	repo    repository.OTPRepository
+	manager OTPManager
 }
 
-func NewOTPManager(length uint) *OTPManager {
-	if length < 4 {
-		length = DEFAULT_OTP_LENGTH // valid otp length only 4 or more
+func NewOTPService(repo *repository.OTPRepository) OTPService {
+	// generate manager
+	otpManager := NewOTPManager(6)
+
+	newService := service{
+		repo:    *repo,
+		manager: *otpManager,
 	}
 
-	secret := os.Getenv("OTP_SECRET")
-
-	return &OTPManager{
-		Length: uint(length),
-		Secret: secret,
-	}
+	return &newService
 }
 
-func (g *OTPManager) GenerateOTP() (string, error) {
-	otpCharsLength := len(digits)
-	buffer := make([]byte, g.Length)
-	_, err := rand.Read(buffer)
+func (s *service) CreateOTP(ctx *context.Context, phone string) (string, error) {
+	var newOtp models.OTPItem
+
+	// validate phone
+	if phone == "" {
+		return "", errors.New("invalid phone data")
+	}
+	newOtp.Phone = phone
+
+	// generate random UUID as index in DB
+	uuid := uuid.New()
+	newOtp.ID = uuid.String()
+
+	otpToken, err := s.manager.GenerateOTP()
 	if err != nil {
-		return "", fmt.Errorf("Error reading buffer: %v", err)
+		return "", err
 	}
 
-	for i := 0; i < int(g.Length); i++ {
-		buffer[i] = digits[int(buffer[i])%otpCharsLength]
+	// store the otp to current mobile phone request
+	newOtp.ExpiryAt = time.Now().UnixMilli() + s.manager.ExpiryDelay
+	// set otpToken
+	newOtp.OTP = otpToken
+
+	// store to DB
+	err = s.repo.CreateOTP(ctx, &newOtp)
+	if err != nil {
+		return "", err
 	}
 
-	return string(buffer), nil
+	return otpToken, nil
+}
+
+func (s *service) ValidateOTP(ctx *context.Context, otpToken string) error {
+	// var newOtp models.OTPItem
+
+	// validate token first. must be integer
+	// _, err := strconv.Atoi(otpToken)
+	// if err != nil {
+	// 	return errors.New("OTP format is invalid")
+	// }
+
+	// // query to DB
+	// err = s.repo.FindByOTPToken(ctx, otpToken)
+	// if err != nil {
+	// 	return err
+	// }
+
+	return nil
 }

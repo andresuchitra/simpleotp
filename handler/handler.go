@@ -4,15 +4,13 @@ import (
 	"net/http"
 
 	"github.com/andresuchitra/simpleotp/models"
-	"github.com/andresuchitra/simpleotp/repository"
 	"github.com/andresuchitra/simpleotp/service"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type ResponseData struct {
-	Status uint32 `json:"status"`
-	Data   string `json:"data"`
+	Status uint32      `json:"status"`
+	Data   interface{} `json:"data"`
 }
 type ResponseError struct {
 	Status uint32 `json:"status"`
@@ -20,12 +18,12 @@ type ResponseError struct {
 }
 
 type handler struct {
-	repo *repository.OTPRepository
+	service service.OTPService
 }
 
-func NewHandler(r *gin.Engine, repo *repository.OTPRepository) {
+func NewHandler(r *gin.Engine, service service.OTPService) {
 	h := handler{
-		repo: repo,
+		service: service,
 	}
 
 	// setup endpoints
@@ -34,7 +32,7 @@ func NewHandler(r *gin.Engine, repo *repository.OTPRepository) {
 }
 
 func (h *handler) GenerateOTP(c *gin.Context) {
-	var newOtp models.OTPItem
+	var newOtp *models.OTPItem
 
 	// check the request payload format
 	if binderr := c.ShouldBindJSON(&newOtp); binderr != nil {
@@ -42,26 +40,18 @@ func (h *handler) GenerateOTP(c *gin.Context) {
 			Error: "Invalid payload format",
 		})
 	}
+	ctx := c.Request.Context()
 
-	// generate UUID
-	uuid := uuid.New()
-	newOtp.ID = uuid.String()
-
-	// generate token
-	otpManager := service.NewOTPManager(6)
-	otpToken, err := otpManager.GenerateOTP()
+	otp, err := h.service.CreateOTP(&ctx, newOtp.Phone)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, ResponseError{
-			Status: http.StatusUnprocessableEntity,
-			Error:  err.Error(),
+			Error: err.Error(),
 		})
 	}
 
-	// store the otp to current mobile phone request
-
 	c.JSON(http.StatusOK, ResponseData{
 		Status: 200,
-		Data:   otpToken,
+		Data:   otp,
 	})
 }
 
