@@ -1,20 +1,28 @@
 package service
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	mockRepository "github.com/andresuchitra/simpleotp/repository/mocks"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
 
 func TestCreateOTP(t *testing.T) {
-	// 1 Success case - token return, with string type AND digit format with length of 6 by default
-	// 2. Error cases - cover return error lines. (if else in the code)
-}
+	ctx := context.Background()
+	mockRepo := mockRepository.NewRepository(t)
 
-func TestNewOTPManager(t *testing.T) {
-	// 1. test with different length to OTPManager constructor, assert the actual Length property.
-	// 2. assert with properties all
-	// 3. performa negative cases,
-}
+	t.Run("Success call CreateOTP", func(t *testing.T) {
+		phone := "081233332222"
 
-func TestOTPManagerGenerateOTP(t *testing.T) {
-	// 1. test with different length to OTPManager constructor, assert the actual Length property.
-	// 2. assert with properties all
-	// 3. performa negative cases,
+		mockRepo.On("CreateOTP", mock.Anything, mock.Anything).Return(nil).Once()
+
+		service := NewOTPService(mockRepo)
+		result, err := service.CreateOTP(&ctx, phone)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result, int(DEFAULT_OTP_LENGTH))
+	})
 }

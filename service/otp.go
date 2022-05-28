@@ -11,16 +11,16 @@ import (
 )
 
 type service struct {
-	repo    repository.OTPRepository
+	repo    repository.Repository
 	manager OTPManager
 }
 
-func NewOTPService(repo *repository.OTPRepository) OTPService {
+func NewOTPService(repo repository.Repository) OTPService {
 	// generate manager
 	otpManager := NewOTPManager(6)
 
 	newService := service{
-		repo:    *repo,
+		repo:    repo,
 		manager: *otpManager,
 	}
 

@@ -9,7 +9,7 @@ import (
 
 const (
 	digits             = "1234567890"
-	DEFAULT_OTP_LENGTH = 6
+	DEFAULT_OTP_LENGTH = uint(6)
 )
 
 type OTPManager struct {
@@ -27,7 +27,7 @@ func NewOTPManager(length uint) *OTPManager {
 	delayExpiry := 5 * time.Minute
 
 	return &OTPManager{
-		Length:      uint(length),
+		Length:      length,
 		Secret:      secret,
 		ExpiryDelay: delayExpiry.Milliseconds(),
 	}
