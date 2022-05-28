@@ -7,3 +7,8 @@ type OTPItem struct {
 	Phone    string `gorm:"not null" json:"phone" binding:"required" form:"phone"`
 	ExpiryAt int64  `gorm:"not null" json:"expiry_at"`
 }
+
+type ValidateOTPParam struct {
+	OTP   string `json:"otp" binding:"required"`
+	Phone string `json:"phone" binding:"required"`
+}

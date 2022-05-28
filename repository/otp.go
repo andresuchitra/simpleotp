@@ -44,7 +44,7 @@ func (r repo) FindByOTPTokenAndPhone(ctx *context.Context, token string, phone s
 }
 
 func (r repo) UpdateOTPByID(ctx *context.Context, id string) error {
-	result := r.DB.Where("id = ?", id).Update("is_used", true)
+	result := r.DB.Table("otp_items").Where("id = ?", id).Update("is_used", true)
 	if result.Error != nil {
 		return result.Error
 	}

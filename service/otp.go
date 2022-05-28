@@ -12,7 +12,15 @@ import (
 	"github.com/google/uuid"
 )
 
-const PHONE_REGEX_INDONESIA = `^\+628[0-9]{9,10}$`
+const (
+	PHONE_REGEX_INDONESIA = `^\+628[0-9]{9,10}$`
+
+	ERR_OTP_ALREADY_USED       = "OTP has been used. Please create again"
+	ERR_INVALID_PHONE_FORMAT   = "Phone format is invalid, must be +628xxxxx, between 11 to 12 digits"
+	ERR_INVALID_PAYLOAD_FORMAT = "OTP format is invalid"
+	ERR_DIFFERENT_PHONE_NUMBER = "Something wrong on phone data. Please create again"
+	ERR_EXPIRED_OTP            = "OTP has been expired. Please create again"
+)
 
 type service struct {
 	repo    repository.Repository
@@ -31,12 +39,18 @@ func NewOTPService(repo repository.Repository) service {
 	return newService
 }
 
-func (s *service) CreateOTP(ctx *context.Context, phone string) (string, error) {
+func (s service) CreateOTP(ctx *context.Context, phone string) (string, error) {
 	var newOtp models.OTPItem
 
 	// validate phone
-	if phone == "" {
-		return "", errors.New("invalid phone data")
+	// validate phone
+	regx, err := regexp.Compile(PHONE_REGEX_INDONESIA)
+	if err != nil {
+		return "", errors.New("Error checking phone format")
+	}
+
+	if !regx.MatchString(phone) {
+		return "", errors.New(ERR_INVALID_PHONE_FORMAT)
 	}
 	newOtp.Phone = phone
 
@@ -63,11 +77,11 @@ func (s *service) CreateOTP(ctx *context.Context, phone string) (string, error) 
 	return otpToken, nil
 }
 
-func (s *service) ValidateOTP(ctx *context.Context, otpToken string, phone string) error {
+func (s service) ValidateOTP(ctx *context.Context, otpToken string, phone string) error {
 	// validate token. must be all digits
 	_, err := strconv.Atoi(otpToken)
 	if err != nil {
-		return errors.New("OTP format is invalid")
+		return errors.New(ERR_INVALID_PAYLOAD_FORMAT)
 	}
 
 	// validate phone
@@ -77,7 +91,7 @@ func (s *service) ValidateOTP(ctx *context.Context, otpToken string, phone strin
 	}
 
 	if !regx.MatchString(phone) {
-		return errors.New("Phone format is invalid, must be +628xxxxx, between 11 to 12 digits")
+		return errors.New(ERR_INVALID_PHONE_FORMAT)
 	}
 
 	// query to DB
@@ -88,12 +102,18 @@ func (s *service) ValidateOTP(ctx *context.Context, otpToken string, phone strin
 
 	// validate if is_used is false, raise error if it's already used
 	if newOtp.IsUsed {
-		return errors.New("OTP has been used. Please create again")
+		return errors.New(ERR_OTP_ALREADY_USED)
+	}
+
+	// validate if phone in created record is different to request
+	// raise error if it's different
+	if newOtp.Phone != phone {
+		return errors.New(ERR_DIFFERENT_PHONE_NUMBER)
 	}
 
 	// if expiry time is passed, raise error
-	if newOtp.ExpiryAt > time.Now().UnixMilli() {
-		return errors.New("OTP has been expired. Please create again")
+	if newOtp.ExpiryAt < time.Now().UnixMilli() {
+		return errors.New(ERR_EXPIRED_OTP)
 	}
 
 	// update to DB
