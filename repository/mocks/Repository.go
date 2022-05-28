@@ -30,6 +30,43 @@ func (_m *Repository) CreateOTP(ctx *context.Context, newOtp *models.OTPItem) er
 	return r0
 }
 
+// FindByOTPTokenAndPhone provides a mock function with given fields: ctx, token, phone
+func (_m *Repository) FindByOTPTokenAndPhone(ctx *context.Context, token string, phone string) (*models.OTPItem, error) {
+	ret := _m.Called(ctx, token, phone)
+
+	var r0 *models.OTPItem
+	if rf, ok := ret.Get(0).(func(*context.Context, string, string) *models.OTPItem); ok {
+		r0 = rf(ctx, token, phone)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.OTPItem)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*context.Context, string, string) error); ok {
+		r1 = rf(ctx, token, phone)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateOTPByID provides a mock function with given fields: ctx, id
+func (_m *Repository) UpdateOTPByID(ctx *context.Context, id string) error {
+	ret := _m.Called(ctx, id)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*context.Context, string) error); ok {
+		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewRepository creates a new instance of Repository. It also registers the testing.TB interface on the mock and a cleanup function to assert the mocks expectations.
 func NewRepository(t testing.TB) *Repository {
 	mock := &Repository{}
