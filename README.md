@@ -12,3 +12,6 @@ Install Go 1.17
 - Hit endpoints below:
   - `/generate` to generate OTP
   - `/verify` to verify and use OTP
+
+## Unit test
+Run `go test ./... -v` to run unit test to all test files
